@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Environment variables & API Keys (Crucial for security!)
+.env
+
+# Uploads cache (optional, keep directory structure)
+data/uploads/*
+!data/uploads/.gitkeep
+
+# VS Code & OS
+.vscode/
+.DS_Store
+Thumbs.db

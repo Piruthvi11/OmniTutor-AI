@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniTutor AI | Multimodal Study Companion</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        },
+                        darkBg: '#0f172a',
+                        cardBg: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Marked Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-darkBg text-slate-100 min-h-screen flex font-sans antialiased">
+
+    <!-- SIDEBAR -->
+    <aside class="w-80 border-r border-slate-800 bg-slate-900/90 flex flex-col justify-between p-5 h-screen sticky top-0">
+        <div class="space-y-6">
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i data-lucide="graduation-cap" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-indigo-400 to-cyan-300 bg-clip-text text-transparent">OmniTutor AI</h1>
+                    <p class="text-xs text-slate-400 mt-1">Multimodal Study Companion</p>
+                </div>
+            </div>
+
+            <!-- API Key Input -->
+            <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 space-y-2">
+                <label class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <i data-lucide="key" class="w-3.5 h-3.5 text-indigo-400"></i> Gemini API Key
+                </label>
+                <input id="apiKeyInput" type="password" placeholder="AIzaSy..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                <p class="text-[10px] text-slate-400">Leaves blank for Local Document Mode.</p>
+            </div>
+
+            <!-- Upload Box -->
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-cyan-400"></i> Upload Course Materials
+                </label>
+                <div id="dropZone" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 transition-colors rounded-xl p-4 text-center cursor-pointer bg-slate-800/30">
+                    <i data-lucide="file-up" class="w-6 h-6 text-slate-400 mx-auto mb-1"></i>
+                    <p class="text-xs text-slate-300">Drop MP4, MP3, or PDF</p>
+                    <p class="text-[10px] text-slate-500 mt-0.5">Click to browse files</p>
+                    <input id="fileInput" type="file" multiple accept=".mp4,.mp3,.wav,.pdf" class="hidden">
+                </div>
+                <button id="uploadBtn" class="w-full bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-medium py-2 rounded-xl text-xs transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i> Index Materials
+                </button>
+            </div>
+
+            <!-- Ingested Files List -->
+            <div class="space-y-2">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Ingested Files</p>
+                <div id="filesList" class="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar text-xs">
+                    <div class="flex items-center gap-2 p-2 bg-slate-800/40 rounded-lg border border-slate-700/40 text-slate-300">
+                        <i data-lucide="file-text" class="w-4 h-4 text-indigo-400 flex-shrink-0"></i>
+                        <span class="truncate">Question_Bank_Lecture.pdf</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="space-y-1">
+            <button onclick="switchTab('chat')" id="tab-btn-chat" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium bg-indigo-600 text-white transition-all">
+                <i data-lucide="message-square" class="w-4 h-4"></i> AI Tutor Chat
+            </button>
+            <button onclick="switchTab('media')" id="tab-btn-media" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-all">
+                <i data-lucide="play-circle" class="w-4 h-4"></i> Media & Modules
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-btn-quiz" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-all">
+                <i data-lucide="target" class="w-4 h-4"></i> Adaptive Quiz
+            </button>
+            <button onclick="switchTab('analytics')" id="tab-btn-analytics" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-all">
+                <i data-lucide="bar-chart-2" class="w-4 h-4"></i> Mastery Graph
+            </button>
+        </nav>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        
+        <!-- HEADER -->
+        <header class="h-16 border-b border-slate-800 px-8 flex items-center justify-between bg-slate-900/50 backdrop-blur-md">
+            <div>
+                <h2 id="tabTitle" class="text-base font-semibold text-slate-100">AI Tutor & Source-Cited Q&A</h2>
+                <p id="tabSubtitle" class="text-xs text-slate-400">Ask any question to receive timestamped and cited explanations</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Agent Ready
+                </span>
+            </div>
+        </header>
+
+        <!-- TAB CONTENTS -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-8">
+
+            <!-- 1. CHAT TAB -->
+            <section id="tab-chat" class="space-y-6 max-w-4xl mx-auto flex flex-col h-full">
+                <!-- Message Thread -->
+                <div id="chatThread" class="flex-1 space-y-4 overflow-y-auto custom-scrollbar pr-2 min-h-[400px]">
+                    <!-- Assistant Welcome -->
+                    <div class="flex gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="bot" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl rounded-tl-none max-w-2xl text-xs leading-relaxed space-y-2 border border-slate-700/60">
+                            <p class="font-semibold text-indigo-300">Hello! I'm your OmniTutor Study Assistant.</p>
+                            <p class="text-slate-300">I have indexed your video lectures and slide notes. Ask me any doubt or formula derivation, and I'll cite the exact video timestamp and textbook pages!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Box -->
+                <div class="glass-panel p-2.5 rounded-2xl border border-slate-700/80 flex items-center gap-2">
+                    <input id="chatInput" type="text" placeholder="E.g., Summarize the numerical problems with citations..." class="flex-1 bg-transparent px-4 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none">
+                    <button id="sendBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white p-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/30">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 2. MEDIA & MODULES TAB -->
+            <section id="tab-media" class="hidden space-y-6 max-w-5xl mx-auto">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Video Player -->
+                    <div class="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3">
+                        <h3 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                            <i data-lucide="video" class="w-4 h-4 text-cyan-400"></i> Video Lecture Preview
+                        </h3>
+                        <div class="aspect-video bg-black rounded-xl overflow-hidden border border-slate-800">
+                            <video id="videoPlayer" controls class="w-full h-full object-cover">
+                                <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+                            </video>
+                        </div>
+                        <div class="flex items-center justify-between text-xs text-slate-400">
+                            <span>Status: Synchronized</span>
+                            <span class="text-indigo-400 font-mono">Jump to Citations Enabled</span>
+                        </div>
+                    </div>
+
+                    <!-- Extracted Modules -->
+                    <div class="glass-panel p-5 rounded-2xl border border-slate-800 space-y-4">
+                        <h3 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                            <i data-lucide="layers" class="w-4 h-4 text-indigo-400"></i> Extracted Course Modules
+                        </h3>
+                        <div id="modulesList" class="space-y-3 max-h-[350px] overflow-y-auto custom-scrollbar">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. ADAPTIVE QUIZ TAB -->
+            <section id="tab-quiz" class="hidden space-y-6 max-w-4xl mx-auto">
+                <!-- Controls -->
+                <div class="glass-panel p-5 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div>
+                            <label class="text-xs text-slate-400 block mb-1">Select Module</label>
+                            <select id="quizTopicSelect" class="bg-slate-800 border border-slate-700 text-xs rounded-xl px-3 py-2 text-slate-200 focus:outline-none">
+                                <option value="All Topics">All Course Modules</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 block mb-1">Difficulty</label>
+                            <select id="quizDifficulty" class="bg-slate-800 border border-slate-700 text-xs rounded-xl px-3 py-2 text-slate-200 focus:outline-none">
+                                <option value="Easy">Easy (Conceptual)</option>
+                                <option value="Medium" selected>Medium (Analytical)</option>
+                                <option value="Hard">Hard (Diagnostic)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="genQuizBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-5 py-2.5 rounded-xl text-xs transition-all shadow-md shadow-indigo-600/30 flex items-center gap-2">
+                        <i data-lucide="cpu" class="w-4 h-4"></i> Generate Adaptive Quiz
+                    </button>
+                </div>
+
+                <!-- Quiz Card Container -->
+                <div id="quizContainer" class="space-y-4">
+                    <div class="text-center py-12 text-slate-500 text-xs">Click "Generate Adaptive Quiz" to begin testing your mastery.</div>
+                </div>
+
+                <!-- Quiz Submit & Diagnostics -->
+                <div id="quizEvaluationCard" class="hidden glass-panel p-6 rounded-2xl border border-emerald-500/30 space-y-4 bg-emerald-950/10">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-sm font-semibold text-emerald-400 flex items-center gap-2">
+                            <i data-lucide="check-circle" class="w-5 h-5"></i> AI Diagnostic Assessment
+                        </h4>
+                        <span id="quizScoreBadge" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300">Score: 3/3 (100%)</span>
+                    </div>
+                    <p id="quizFeedbackText" class="text-xs text-slate-300 leading-relaxed"></p>
+                </div>
+            </section>
+
+            <!-- 4. MASTERY ANALYTICS TAB -->
+            <section id="tab-analytics" class="hidden space-y-6 max-w-5xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Bar Chart -->
+                    <div class="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3">
+                        <h3 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                            <i data-lucide="bar-chart" class="w-4 h-4 text-cyan-400"></i> Module-Wise Mastery
+                        </h3>
+                        <div class="h-64">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Radar Chart -->
+                    <div class="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3">
+                        <h3 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                            <i data-lucide="radar" class="w-4 h-4 text-indigo-400"></i> Competency Radar Profile
+                        </h3>
+                        <div class="h-64">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Plan Card -->
+                <div class="glass-panel p-6 rounded-2xl border border-indigo-500/20 bg-indigo-950/10 space-y-3">
+                    <h4 class="text-sm font-semibold text-indigo-300 flex items-center gap-2">
+                        <i data-lucide="lightbulb" class="w-4 h-4 text-yellow-400"></i> Personalized Agentic Study Recommendation
+                    </h4>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Based on your adaptive quiz performance, your priority review area is <strong>Analytical & Numerical Derivations</strong>. We recommend reviewing <strong>[Video: 11:45 - 14:10]</strong> and solving Problem Set 4 in your question bank.
+                    </p>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Application Script -->
+    <script src="/app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
