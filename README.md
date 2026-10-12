@@ -21,6 +21,11 @@
 
 ---
 
+## 🎬 Live Video Demonstration
+👉 **[Watch Demo on YouTube: https://youtu.be/3S0pL_q8Tsk](https://youtu.be/3S0pL_q8Tsk)**
+
+---
+
 ## 🌟 Project Overview
 **OmniTutor** is an intelligent multimodal study companion built to solve the **Fragmented Study Paradox** in engineering education. It unifies lecture videos, slide presentations, and syllabus question bank PDFs into a single source-grounded session.
 
