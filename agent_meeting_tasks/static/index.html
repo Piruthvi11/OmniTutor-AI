@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting-to-Tasks Agent | Agentic AI Hackathon 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo-badge">
+        <span class="agent-icon">🤖</span>
+        <div>
+          <h1>Meeting-to-Tasks Agent</h1>
+          <p class="subtitle">Agentic AI Hackathon 2026 • Powered by Ziro.Digital</p>
+        </div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="trello-status-pill" id="trelloStatusPill">
+        <span class="status-indicator live"></span>
+        <span class="status-text" id="trelloStatusText">Checking Trello...</span>
+      </div>
+      <a href="https://trello.com/b/6ad4e6a1950051dcf4dfb833" target="_blank" class="btn btn-secondary btn-sm" id="openBoardBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        Open Trello Board
+      </a>
+      <button class="btn btn-ghost btn-sm" id="resetDbBtn" title="Reset SQLite database records to re-test deduplication from scratch">
+        🧹 Reset DB
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+    
+    <!-- Workflow Stages Bar -->
+    <section class="workflow-stepper">
+      <div class="step-card active" id="step1">
+        <span class="step-num">01</span>
+        <div class="step-meta">
+          <strong>Collect Details</strong>
+          <span>Transcript & Team</span>
+        </div>
+      </div>
+      <div class="step-arrow">➔</div>
+      <div class="step-card" id="step2">
+        <span class="step-num">02</span>
+        <div class="step-meta">
+          <strong>Plan Next Steps</strong>
+          <span>Decisions & Tentatives</span>
+        </div>
+      </div>
+      <div class="step-arrow">➔</div>
+      <div class="step-card" id="step3">
+        <span class="step-num">03</span>
+        <div class="step-meta">
+          <strong>Find Info</strong>
+          <span>Trello Board Sync</span>
+        </div>
+      </div>
+      <div class="step-arrow">➔</div>
+      <div class="step-card" id="step4">
+        <span class="step-num">04</span>
+        <div class="step-meta">
+          <strong>Human Approval</strong>
+          <span>Safe Execution Gate</span>
+        </div>
+      </div>
+      <div class="step-arrow">➔</div>
+      <div class="step-card" id="step5">
+        <span class="step-num">05</span>
+        <div class="step-meta">
+          <strong>Verify Card</strong>
+          <span>Re-read & Audit</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Test Cases Quick Launch Bar -->
+    <section class="test-launcher-section">
+      <div class="test-launcher-header">
+        <span class="launcher-title">🎯 Official Test Cases (1-Click Judge Scenarios)</span>
+        <span class="launcher-sub">Required test scenarios specified in hackathon brief</span>
+      </div>
+      <div class="test-buttons-grid">
+        <button class="test-btn" data-scenario="TC1">
+          <div class="test-btn-top">
+            <span class="test-badge pass-badge">TC1</span>
+            <span class="test-title">Clear Decision with Owner & Date</span>
+          </div>
+          <p class="test-desc">Creates Trello card after human approval with owner, due date & transcript link.</p>
+        </button>
+
+        <button class="test-btn" data-scenario="TC2">
+          <div class="test-btn-top">
+            <span class="test-badge warn-badge">TC2</span>
+            <span class="test-title">Two Team Members Named Priya</span>
+          </div>
+          <p class="test-desc">Detects ambiguous owner. Prompts human clarification before any card is created.</p>
+        </button>
+
+        <button class="test-btn" data-scenario="TC3">
+          <div class="test-btn-top">
+            <span class="test-badge info-badge">TC3</span>
+            <span class="test-title">'Maybe Next Week' Tentative Filter</span>
+          </div>
+          <p class="test-desc">Classifies tentative remarks as discussion items. Creates 0 Trello cards.</p>
+        </button>
+
+        <button class="test-btn" data-scenario="TC4">
+          <div class="test-btn-top">
+            <span class="test-badge alert-badge">TC4</span>
+            <span class="test-title">Same Transcript Re-imported</span>
+          </div>
+          <p class="test-desc">SHA-256 deduplication triggers. Prevents duplicate card creation on board.</p>
+        </button>
+      </div>
+    </section>
+
+    <!-- Workspace Grid -->
+    <div class="workspace-grid">
+      
+      <!-- Left Panel: Input & Team -->
+      <section class="panel left-panel">
+        <div class="panel-header">
+          <h2>📥 Meeting Inputs</h2>
+          <span class="tag">Stage 01</span>
+        </div>
+
+        <div class="form-group">
+          <div class="label-row">
+            <label for="transcriptId">Transcript Record ID</label>
+            <span class="field-hint">Stable identifier for audit trail</span>
+          </div>
+          <input type="text" id="transcriptId" value="TC1-SPRINT-001" class="form-control" placeholder="e.g. TC1-SPRINT-001">
+        </div>
+
+        <div class="form-group">
+          <div class="label-row">
+            <label for="transcriptText">Meeting Transcript Content</label>
+            <span class="field-hint" id="charCount">0 characters</span>
+          </div>
+          <textarea id="transcriptText" class="form-control code-editor" rows="7" placeholder="Paste or type meeting dialog here..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <div class="label-row">
+            <label>Team Member Roster</label>
+            <button class="btn btn-xs btn-ghost" id="addMemberBtn">+ Add Member</button>
+          </div>
+          <div class="team-table-wrapper">
+            <table class="team-table" id="teamTable">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>Email</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="teamTableBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-block btn-lg" id="runAgentBtn">
+          <span>⚡ Run Meeting Agent</span>
+        </button>
+      </section>
+
+      <!-- Right Panel: Agent Decisions & Actions -->
+      <section class="panel right-panel">
+        <div class="panel-header">
+          <h2>🧠 Agent Decisions & Trello Actions</h2>
+          <span class="tag" id="statusTag">Ready</span>
+        </div>
+
+        <!-- Notification / Deduplication Alert Box -->
+        <div class="alert-box alert-duplicate hidden" id="duplicateAlertBox">
+          <div class="alert-icon">🛡️</div>
+          <div class="alert-content">
+            <h4>TC4: Duplicate Transcript Detected</h4>
+            <p id="duplicateAlertText"></p>
+            <div class="alert-meta" id="duplicateAlertMeta"></div>
+          </div>
+        </div>
+
+        <!-- Section: Clarifications Needed (TC2) -->
+        <div class="agent-section hidden" id="clarificationsSection">
+          <div class="section-title text-warning">
+            <span>❓ Ambiguity Clarification Required (TC2 Rule)</span>
+            <span class="counter-pill" id="clarificationsCount">0</span>
+          </div>
+          <div class="section-cards-list" id="clarificationsList">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Section: Confirmed Tasks Pending Approval (TC1 / Step 4) -->
+        <div class="agent-section" id="confirmedSection">
+          <div class="section-title text-primary">
+            <span>📋 Confirmed Tasks Requiring Human Approval (Step 04)</span>
+            <span class="counter-pill" id="confirmedCount">0</span>
+          </div>
+          <div class="empty-state" id="confirmedEmpty">
+            <p>Run agent analysis or launch a test scenario to extract confirmed tasks.</p>
+          </div>
+          <div class="section-cards-list" id="confirmedList">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Section: Tentative Items (TC3) -->
+        <div class="agent-section hidden" id="tentativeSection">
+          <div class="section-title text-muted">
+            <span>💭 Tentative & Discussion Items (TC3 Rule)</span>
+            <span class="counter-pill" id="tentativeCount">0</span>
+          </div>
+          <div class="section-cards-list" id="tentativeList">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Section: Step 5 Card Verification Feed -->
+        <div class="agent-section hidden" id="verificationSection">
+          <div class="section-title text-success">
+            <span>🔍 Step 05: Independent Verification State</span>
+            <span class="counter-pill" id="verificationCount">0</span>
+          </div>
+          <div class="section-cards-list" id="verificationList">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- Live Trello Cards Bottom Bar -->
+    <section class="live-cards-section">
+      <div class="live-cards-header">
+        <div class="live-title-row">
+          <h3>📌 Cards Currently in Trello List: <span class="highlight">"This Week"</span></h3>
+          <button class="btn btn-xs btn-ghost" id="refreshCardsBtn">🔄 Refresh Board</button>
+        </div>
+        <p class="live-sub">Live synchronized items on your free Trello board (Target ID: <code>6ad4e6a2950051dcf4dfb83b</code>)</p>
+      </div>
+      <div class="board-cards-grid" id="boardCardsGrid">
+        <div class="empty-board-msg">Loading current cards from Trello...</div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
